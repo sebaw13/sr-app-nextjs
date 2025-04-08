@@ -1,16 +1,16 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from 'utils/supabase/server'
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { Toggle } from '@/components/ui/toggle'
-import SignedVideoPlayer from '@/components/SignedVideoPlayer'
+} from 'components/ui/card'
+import { Badge } from 'components/ui/badge'
+import { Separator } from 'components/ui/separator'
+import { Toggle } from 'components/ui/toggle'
+import SignedVideoPlayer from 'components/SignedVideoPlayer'
 
 export default async function Page({ params }: any) {
 
@@ -50,7 +50,7 @@ export default async function Page({ params }: any) {
 
           {videoszene.spielstrafe && (
             <div>
-              <p className="text-sm text-muted-foreground">Spielstrafe</p>
+              <p className="text-sm text-muted-foreground">Spielstrafen</p>
               <p>{videoszene.spielstrafe}</p>
             </div>
           )}
