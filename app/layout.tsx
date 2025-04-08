@@ -1,17 +1,17 @@
 "use client";
 
-import DeployButton from "@/components/deploy-button";
-import { EnvVarWarning } from "@/components/env-var-warning";
-import HeaderAuth from "@/components/header-auth";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { hasEnvVars } from "@/utils/supabase/check-env-vars";
+import DeployButton from "components/deploy-button";
+import { EnvVarWarning } from "components/env-var-warning";
+import HeaderAuth from "components/header-auth";
+import { ThemeSwitcher } from "components/theme-switcher";
+import { hasEnvVars } from "utils/supabase/check-env-vars";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import Link from "next/link";
 import Image from "next/image";
 import "./globals.css";
 import clsx from "clsx";
-import Navbar from "@/components/Navbar";
+import Navbar from "components/Navbar";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
