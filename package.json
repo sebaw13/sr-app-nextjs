@@ -37,6 +37,7 @@
     "@types/node": "22.10.2",
     "@types/qs": "^6.9.18",
     "@types/react": "^19.0.2",
+    "@types/react-day-picker": "^5.2.1",
     "@types/react-dom": "19.0.2",
     "postcss": "8.4.49",
     "tailwind-merge": "^2.5.2",

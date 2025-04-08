@@ -3,10 +3,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from 'utils/supabase/client';
-import { Card, CardContent } from 'components/ui/card';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from 'components/ui/table';
-import { Button } from 'components/ui/button';
+import { createClient } from '@/utils/supabase/client';
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 
 const supabase = await createClient();
 

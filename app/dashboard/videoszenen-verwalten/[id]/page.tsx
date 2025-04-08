@@ -1,25 +1,25 @@
 import { notFound } from 'next/navigation'
-import { createClient } from 'utils/supabase/server'
+import { createClient } from '@/utils/supabase/server'
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from 'components/ui/card'
-import { Badge } from 'components/ui/badge'
-import { Separator } from 'components/ui/separator'
-import { Toggle } from 'components/ui/toggle'
-import SignedVideoPlayer from 'components/SignedVideoPlayer'
+} from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { Toggle } from '@/components/ui/toggle'
+import SignedVideoPlayer from '@/components/SignedVideoPlayer'
 
-export default async function Page({ params }: any) {
+export default async function Page({ params }: { params: { id: string } }) {
 
   const supabase = await createClient()
 
   const { data: videoszene, error } = await supabase
     .from('videoszenen')
     .select('*, file:video_file_id (id, url)')
-    .eq('id', params.videoszenenId)
+    .eq('id', params.id)
     .single()
 
   if (error || !videoszene) return notFound()

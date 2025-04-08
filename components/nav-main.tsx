@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { ChevronDown, ChevronRight } from "lucide-react"
-import { cn } from "lib/utils"
+import { cn } from "@/lib/utils"
 import { usePathname } from "next/navigation"
 
 type SubItem = {
