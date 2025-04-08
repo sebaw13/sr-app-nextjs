@@ -13,13 +13,8 @@ import { Toggle } from '@/components/ui/toggle'
 import SignedVideoPlayer from '@/components/SignedVideoPlayer'
 
 
-interface PageProps {
-    params: { id: string }
-  }
-
-
-export default async function Page({ params }: PageProps) {
-
+export default async function Page({ params }: { params: Record<string, string> }) {
+    
   const supabase = await createClient()
 
   const { data: videoszene, error } = await supabase
