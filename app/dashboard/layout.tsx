@@ -1,5 +1,5 @@
-import { DashboardSidebar } from "@/components/DashboardSidebar"
-import { SidebarProvider } from "@/components/ui/sidebar" // <– Wichtig
+import { DashboardSidebar } from "components/DashboardSidebar"
+import { SidebarProvider } from "components/ui/sidebar" // <– Wichtig
 
 export default function DashboardLayout({
   children,
