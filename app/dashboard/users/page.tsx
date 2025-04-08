@@ -8,7 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 
-const supabase = createClient();
+const supabase = await createClient();
+
 
 export default function UsersPage() {
   const router = useRouter();

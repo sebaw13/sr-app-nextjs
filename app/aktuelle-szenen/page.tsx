@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";  // Verwende 'next/navigation' stat
 import { createClient } from "@/utils/supabase/client";  // Stelle sicher, dass du den Client importierst
 
 // Supabase Client erstellen
-const supabase = createClient();
+const supabase = await createClient();
+
+
 
 export default function AktuelleSzenenPage() {
   const [user, setUser] = useState<any>(null);

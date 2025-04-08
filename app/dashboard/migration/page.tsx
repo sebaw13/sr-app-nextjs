@@ -8,7 +8,8 @@ import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 
-const supabase = createClient();
+const supabase = await createClient();
+
 
 export default function MigrationPage() {
   const [videoszenen, setVideoszenen] = useState<any[]>([]);
