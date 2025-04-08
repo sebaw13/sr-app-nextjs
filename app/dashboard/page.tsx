@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";  // Verwende 'next/navigation' statt 'next/router'
-import { createClient } from "@/utils/supabase/client";  // Stelle sicher, dass du den Client importierst
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { createClient } from "utils/supabase/client";  // Stelle sicher, dass du den Client importierst
+import { Card, CardContent } from "components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "components/ui/tabs";
 import Link from "next/link";
 
 // Supabase Client erstellen

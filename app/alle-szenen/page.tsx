@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";  // Verwende 'next/navigation' statt 'next/router'
-import { createClient } from "@/utils/supabase/client";  // Stelle sicher, dass du den Client importierst
+import { createClient } from "utils/supabase/client";  // Stelle sicher, dass du den Client importierst
 
 // Supabase Client erstellen
 const supabase = await createClient();

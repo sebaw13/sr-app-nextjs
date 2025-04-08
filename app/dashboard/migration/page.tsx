@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent } from "components/ui/card";
+import { Badge } from "components/ui/badge";
+import { ScrollArea } from "components/ui/scroll-area";
 import Image from "next/image";
-import { createClient } from "@/utils/supabase/client";
-import { Button } from "@/components/ui/button";
+import { createClient } from "utils/supabase/client";
+import { Button } from "components/ui/button";
 
 const supabase = await createClient();
 
