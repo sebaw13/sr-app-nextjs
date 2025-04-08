@@ -20,7 +20,7 @@ export default async function Page({ params }: { params: ParamsType }) {
 
   const { data: videoszene, error } = await supabase
     .from('videoszenen')
-    .select('*, file:video_file_id (id, url)')
+    .select('*, file:video_file_id (id, hash, ext, folder_path)')
     .eq('id', id) // ✅ ← hier war vorher noch params.id
     .single()
 
@@ -41,9 +41,11 @@ export default async function Page({ params }: { params: ParamsType }) {
           <Separator />
 
           <SignedVideoPlayer
-            hash="41_Fuerth_II_FWK_1511bf0e4a"
-            ext=".mp4"
-          />
+                hash={videoszene.file.hash}
+                ext={videoszene.file.ext}
+                folder={videoszene.file.folder_path?.replace(/^\//, '') || ''}
+            />
+
 
           <div>
             <p className="text-sm text-muted-foreground">Beschreibung</p>
