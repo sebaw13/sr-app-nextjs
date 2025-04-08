@@ -1,17 +1,23 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Toggle } from '@/components/ui/toggle';
 import Image from 'next/image';
 import SignedVideoPlayer from '@/components/SignedVideoPlayer';
 
-interface Props {
-  params: Record<string, string>;
-}
-
-export default async function VideoszeneDetailPage({ params }: Props) {
+export default async function VideoszeneDetailPage({
+  params,
+}: {
+  params: { videoszenenId: string };
+}) {
   const { videoszenenId } = params;
   console.log('Lade Detailseite für Videoszene ID:', videoszenenId);
 
@@ -35,7 +41,8 @@ export default async function VideoszeneDetailPage({ params }: Props) {
         <CardHeader>
           <CardTitle className="text-3xl">{videoszene.titel}</CardTitle>
           <CardDescription className="text-muted-foreground">
-            ID: {videoszene.id} | Status: <Badge variant="outline">{videoszene.arbeitsstatus}</Badge>
+            ID: {videoszene.id} | Status:{' '}
+            <Badge variant="outline">{videoszene.arbeitsstatus}</Badge>
           </CardDescription>
         </CardHeader>
 
@@ -43,11 +50,9 @@ export default async function VideoszeneDetailPage({ params }: Props) {
           <Separator />
 
           <SignedVideoPlayer
-  hash="41_Fuerth_II_FWK_1511bf0e4a"
-  ext=".mp4"
-/>
-
-
+            hash="41_Fuerth_II_FWK_1511bf0e4a"
+            ext=".mp4"
+          />
 
           <div>
             <p className="text-sm text-muted-foreground">Beschreibung</p>
