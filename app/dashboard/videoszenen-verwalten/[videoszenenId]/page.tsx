@@ -1,3 +1,5 @@
+// app/videoszene/[id]/page.tsx
+
 import { notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import {
@@ -12,18 +14,17 @@ import { Separator } from '@/components/ui/separator'
 import { Toggle } from '@/components/ui/toggle'
 import SignedVideoPlayer from '@/components/SignedVideoPlayer'
 
-export default async function VideoszeneDetailPage(props: any) {
-  const { videoszenenId } = props.params
+export default async function Page({ params }: { params: { id: string } }) {
+  const supabase = await createClient();
 
-  const supabase = createClient()
+
   const { data: videoszene, error } = await supabase
     .from('videoszenen')
     .select('*, file:video_file_id (id, url)')
-    .eq('id', videoszenenId)
+    .eq('id', params.id)
     .single()
 
   if (error || !videoszene) return notFound()
-
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
