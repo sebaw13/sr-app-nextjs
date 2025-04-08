@@ -20,12 +20,14 @@ export default async function VideoszeneDetailPage({
   const { videoszenenId } = params
   console.log('Lade Detailseite für Videoszene ID:', videoszenenId)
 
-  const supabase = createClient()
-  const { data: videoszene, error } = await (await supabase)
-    .from('videoszenen')
-    .select('*, file:video_file_id (id, url)')
-    .eq('id', videoszenenId)
-    .single()
+  const supabase = await createClient()
+
+const { data: videoszene, error } = await supabase
+  .from('videoszenen')
+  .select('*, file:video_file_id (id, url)')
+  .eq('id', videoszenenId)
+  .single()
+
 
   if (error || !videoszene) {
     console.error('Fehler beim Laden der Videoszene:', error)
@@ -100,3 +102,4 @@ export default async function VideoszeneDetailPage({
     </div>
   )
 }
+
