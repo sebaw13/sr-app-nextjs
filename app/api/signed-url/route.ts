@@ -4,7 +4,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { NextRequest } from 'next/server';
 
 const s3 = new S3Client({
-  region: 'us-east-1',
+  region: 'eu-central-1',
   endpoint: process.env.DO_SPACE_ENDPOINT,
   credentials: {
     accessKeyId: process.env.DO_SPACE_ACCESS_KEY!,
@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
   const command = new GetObjectCommand({
     Bucket: process.env.DO_SPACE_BUCKET,
     Key: key,
+    ResponseContentType: 'video/mp4', // optional, aber praktisch
   });
 
   try {
