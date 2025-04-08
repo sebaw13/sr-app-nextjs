@@ -12,26 +12,18 @@ import { Separator } from '@/components/ui/separator'
 import { Toggle } from '@/components/ui/toggle'
 import SignedVideoPlayer from '@/components/SignedVideoPlayer'
 
-export default async function VideoszeneDetailPage({
-  params,
-}: {
-  params: { videoszenenId: string }
-}) {
-  const { videoszenenId } = params
-  console.log('Lade Detailseite für Videoszene ID:', videoszenenId)
+export default async function VideoszeneDetailPage(props: any) {
+  const { videoszenenId } = props.params
 
   const supabase = await createClient()
-
   const { data: videoszene, error } = await supabase
     .from('videoszenen')
     .select('*, file:video_file_id (id, url)')
     .eq('id', videoszenenId)
     .single()
 
-  if (error || !videoszene) {
-    console.error('Fehler beim Laden der Videoszene:', error)
-    return notFound()
-  }
+  if (error || !videoszene) return notFound()
+
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
