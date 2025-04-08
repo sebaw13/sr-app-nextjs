@@ -12,8 +12,7 @@ import { Separator } from '@/components/ui/separator'
 import { Toggle } from '@/components/ui/toggle'
 import SignedVideoPlayer from '@/components/SignedVideoPlayer'
 
-
-export default async function VideoszenePage({ params }: { params: { id: string } }) {
+export default async function Page({ params }: { params: { id: string } }) {
 
   const supabase = await createClient()
 
