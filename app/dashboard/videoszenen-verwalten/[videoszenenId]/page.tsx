@@ -15,7 +15,7 @@ import SignedVideoPlayer from '@/components/SignedVideoPlayer'
 export default async function VideoszeneDetailPage(props: any) {
   const { videoszenenId } = props.params
 
-  const supabase = await createClient()
+  const supabase = createClient()
   const { data: videoszene, error } = await supabase
     .from('videoszenen')
     .select('*, file:video_file_id (id, url)')
