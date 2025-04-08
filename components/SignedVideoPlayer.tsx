@@ -16,33 +16,23 @@ export default function SignedVideoPlayer({ hash, ext, folder = '' }: Props) {
 
   const fileKey = `${folder ? `${folder}/` : ''}${hash}${ext}`;
 
-  useEffect(() => {
-    const fetchSignedUrl = async () => {
-      try {
-        const res = await fetch('/api/signed-url', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ key: fileKey }),
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-          setVideoUrl(data.url);
-        } else {
-          setError(data.error || 'Fehler beim Abrufen der Video-URL');
-        }
-      } catch (err) {
-        setError('Netzwerkfehler beim Abrufen der Video-URL');
-      } finally {
-        setLoading(false);
+  const fetchSignedUrl = async () => {
+    try {
+      const res = await fetch(`/api/signed-url?fileName=${encodeURIComponent(fileKey)}`);
+      const data = await res.json();
+  
+      if (res.ok) {
+        setVideoUrl(data.url);
+      } else {
+        setError(data.error || 'Fehler beim Abrufen der Video-URL');
       }
-    };
+    } catch (err) {
+      setError('Netzwerkfehler beim Abrufen der Video-URL');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchSignedUrl();
-  }, [fileKey]);
 
   if (loading) return <p>Lade Video...</p>;
   if (error) return <p>Fehler: {error}</p>;
