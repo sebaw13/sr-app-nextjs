@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Link from "next/link";
 
 // Supabase Client erstellen
-const supabase = await createClient();
+const supabase = createClient();
 
 
 export default function DashboardPage() {
