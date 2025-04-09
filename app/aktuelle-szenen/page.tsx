@@ -8,11 +8,12 @@ import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 
 
-export default async function AktuelleSzenenPage({ searchParams }: { searchParams?: { page?: string } }) {
+export default async function AktuelleSzenenPage({ searchParams }: { searchParams?: Promise<{ page?: string }> }) {
+  const resolvedParams = await searchParams;
+
+  const page = parseInt(resolvedParams?.page || '1');
 
   const supabase = await createClient();
-
-  const page = parseInt(searchParams?.page || '1');
 
   const pageSize = 4;
   const from = (page - 1) * pageSize;
