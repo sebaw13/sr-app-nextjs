@@ -7,7 +7,12 @@ import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
+type LocalPageProps = {
+  searchParams?: { page?: string };
+};
+
 export default async function AktuelleSzenenPage({ searchParams }: { searchParams?: { page?: string } }) {
+
   const supabase = await createClient();
 
   const page = parseInt(searchParams?.page || '1');
