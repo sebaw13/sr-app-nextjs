@@ -13,6 +13,7 @@ import { Toggle } from '@/components/ui/toggle'
 import SignedVideoPlayer from '@/components/SignedVideoPlayer'
 import VideoUpload from '@/components/VideoUpload'
 import { revalidatePath } from 'next/cache';
+import VideoUploadWrapper from '@/components/VideoUploadWrapper';
 
 type ParamsType = Promise<{ id: string }>;
 
@@ -61,7 +62,7 @@ export default async function Page({ params }: { params: ParamsType }) {
       ext={videoszene.file.ext}
     />
   ) : (
-    <VideoUpload onUploaded={handleVideoUploaded} />
+    <VideoUploadWrapper videoszeneId={videoszene.id} />
   )
 }
 

@@ -1,16 +1,22 @@
-import Hero from "@/components/hero";
-import ConnectSupabaseSteps from "@/components/tutorial/connect-supabase-steps";
-import SignUpUserSteps from "@/components/tutorial/sign-up-user-steps";
-import { hasEnvVars } from "@/utils/supabase/check-env-vars";
+// app/page.tsx
+import { redirect } from 'next/navigation';
+import { createClient } from '@/utils/supabase/server';
 
 export default async function Home() {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await (await supabase).auth.getSession();
+
+  // Wenn kein User eingeloggt ist → zur Sign-in Page
+  if (!session) {
+    redirect('/sign-in');
+  }
+
   return (
-    <>
-      <Hero />
-      <main className="flex-1 flex flex-col gap-6 px-4">
-        <h2 className="font-medium text-xl mb-4">Next steps</h2>
-        {hasEnvVars ? <SignUpUserSteps /> : <ConnectSupabaseSteps />}
-      </main>
-    </>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold">Willkommen im SR-Portal ⚽</h1>
+      {/* Hier kannst du dein Dashboard / Einstieg anzeigen */}
+    </div>
   );
 }
