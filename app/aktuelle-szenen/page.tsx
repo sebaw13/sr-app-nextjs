@@ -8,15 +8,9 @@ import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 
 
-export default async function AktuelleSzenenPage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ page?: string | undefined }>;
-}) {
+export default async function AktuelleSzenenPage({ searchParams }: { searchParams: Promise<any> }) {
   const resolvedParams = await searchParams;
   const page = parseInt(resolvedParams?.page || '1');
-
-
 
   const supabase = await createClient();
 
