@@ -59,7 +59,6 @@ export default async function Page({ params }: { params: ParamsType }) {
     <SignedVideoPlayer
       hash={videoszene.file.hash}
       ext={videoszene.file.ext}
-      folder={videoszene.file.folder_path?.replace(/^\//, '') || ''}
     />
   ) : (
     <VideoUpload onUploaded={handleVideoUploaded} />
