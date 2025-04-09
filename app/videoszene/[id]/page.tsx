@@ -5,11 +5,14 @@ import SignedVideoPlayer from '@/components/SignedVideoPlayer';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { headers } from 'next/headers';
+
 
 type ParamsType = Promise<{ id: string }>;
 
 export default async function Page({ params }: { params: ParamsType }) {
   const { id } = await params;
+  const referer = (await headers()).get('referer') || '/aktuelle-szenen';
   const supabase = await createClient();
 
   const { data: videoszene, error } = await supabase
@@ -23,6 +26,12 @@ export default async function Page({ params }: { params: ParamsType }) {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="pt-6">
+  <a href={referer}>
+    <Button variant="secondary">← Zurück</Button>
+  </a>
+</div>
+
       {/* Titel */}
       <h1 className="text-3xl font-bold">{videoszene.titel}</h1>
 

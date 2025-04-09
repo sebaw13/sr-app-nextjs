@@ -1,40 +1,139 @@
-"use client";  // Diese Direktive stellt sicher, dass die Komponente als Client-Komponente behandelt wird
+// app/aktuelle-szenen/page.tsx
+import { createClient } from '@/utils/supabase/server';
+import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
+import SzeneKarte from '../../components/SzeneKarte';
+import Link from 'next/link';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";  // Verwende 'next/navigation' statt 'next/router'
-import { createClient } from "@/utils/supabase/client";  // Stelle sicher, dass du den Client importierst
+export const dynamic = 'force-dynamic';
 
-// Supabase Client erstellen
-const supabase = await createClient();
+export default async function AktuelleSzenenPage({ searchParams }: { searchParams?: { page?: string } }) {
+  const supabase = await createClient();
 
+  const page = parseInt(searchParams?.page || '1');
 
+  const pageSize = 4;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
 
-export default function AktuelleSzenenPage() {
-  const [user, setUser] = useState<any>(null);
-  const router = useRouter();
+  const { data: releases, error } = await supabase
+    .from('szenenreleases')
+    .select('id, name, released_at, beschreibung, linked_videoszenen')
+    .eq('status', 'Veröffentlicht')
+    .order('released_at', { ascending: false })
+    .range(from, to);
 
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();  // Hier den Supabase-Client verwenden
-      if (!user) {
-        // Falls kein User angemeldet ist, Weiterleitung zur Anmeldeseite
-        router.push('/login');
-      } else {
-        setUser(user);
-      }
-    };
-    
-    checkUser();
-  }, [router]);
-
-  if (!user) {
-    return <div>Loading...</div>; // Hier könntest du auch einen Spinner anzeigen
+  if (error) {
+    console.error('Fehler beim Laden der Releases:', error.message);
+    return <div>Fehler beim Laden der Szenen.</div>;
   }
 
+  if (!releases || releases.length === 0) {
+    notFound();
+  }
+
+  const allSzenen = new Map();
+
+  for (const release of releases) {
+    let szeneIds: number[] = [];
+
+    if (Array.isArray(release.linked_videoszenen)) {
+      szeneIds = release.linked_videoszenen.map(Number).filter(id => !isNaN(id));
+    } else {
+      try {
+        const raw = JSON.parse(release.linked_videoszenen || '[]');
+        if (Array.isArray(raw)) {
+          szeneIds = raw.map(Number).filter(id => !isNaN(id));
+        }
+      } catch (e) {
+        console.warn('Fehler beim Parsen von linked_videoszenen:', release.linked_videoszenen);
+      }
+    }
+
+    if (szeneIds.length > 0) {
+      const { data: szenen } = await supabase
+        .from('videoszenen')
+        .select('id, titel, beschreibung, thumbnail_file_id, themen')
+        .in('id', szeneIds);
+
+      const thumbnailIds = (szenen || []).map(s => s.thumbnail_file_id).filter(Boolean);
+
+      const { data: files } = await supabase
+        .from('files')
+        .select('id, url')
+        .in('id', thumbnailIds);
+
+      const fileMap = new Map(files?.map(f => [f.id, f.url]));
+      const baseURL = 'https://bfv-vsa.fra1.digitaloceanspaces.com/';
+
+      const enriched = (szenen || []).map(szene => ({
+        ...szene,
+        thumbnail_path: fileMap.get(szene.thumbnail_file_id)?.replace(baseURL, '') || null,
+      }));
+
+      allSzenen.set(release.id, enriched);
+    } else {
+      allSzenen.set(release.id, []);
+    }
+  }
+
+  // Dynamisch berechnen basierend auf Gesamtanzahl der Releases
+  const { count } = await supabase
+    .from('szenenreleases')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'Veröffentlicht');
+
+  const totalPages = Math.ceil((count || 0) / pageSize);
+
   return (
-    <div className="p-6 max-w-screen-lg mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Aktuelle Szenen</h1>
-      <p className="text-muted-foreground mb-6">Plane und optimiere deine Produktionsprozesse.</p>
+    <div className="p-6 space-y-10">
+      <h1 className="text-2xl font-bold">Aktuelle Szenen</h1>
+
+      {releases.map((release) => (
+        <div key={release.id} className="border rounded-xl p-4 shadow-md">
+          <h2 className="text-xl font-semibold mb-2">{release.name}</h2>
+          <p className="text-sm text-gray-500 mb-1">Veröffentlicht am: {release.released_at}</p>
+          {release.beschreibung && <p className="text-sm text-gray-700 mt-2 mb-4">{release.beschreibung}</p>}
+
+          <div className="flex flex-wrap -mx-2">
+            {allSzenen.get(release.id)?.map((szene: any) => (
+              <SzeneKarte key={szene.id} szene={szene} />
+            ))}
+          </div>
+        </div>
+      ))}
+
+      <div className="flex justify-between items-center pt-6 border-t pt-4">
+        {page > 1 ? (
+          <Link
+            href={`?page=${page - 1}`}
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            ← Zurück
+          </Link>
+        ) : <div />}
+
+        <div className="flex space-x-2">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <Link
+              key={p}
+              href={`?page=${p}`}
+              className={`px-3 py-1 rounded ${p === page ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
+            >
+              {p}
+            </Link>
+          ))}
+        </div>
+
+        {page < totalPages ? (
+          <Link
+            href={`?page=${page + 1}`}
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Weiter →
+          </Link>
+        ) : <div />}
+      </div>
     </div>
   );
 }
