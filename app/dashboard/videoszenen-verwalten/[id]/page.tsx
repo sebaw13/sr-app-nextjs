@@ -11,12 +11,26 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Toggle } from '@/components/ui/toggle'
 import SignedVideoPlayer from '@/components/SignedVideoPlayer'
+import VideoUpload from '@/components/VideoUpload'
+import { revalidatePath } from 'next/cache';
 
 type ParamsType = Promise<{ id: string }>;
 
 export default async function Page({ params }: { params: ParamsType }) {
   const { id } = await params;
   const supabase = await createClient()
+
+  const handleVideoUploaded = async (fileId: number) => {
+    const { error } = await supabase
+      .from('videoszenen')
+      .update({ video_file_id: fileId })
+      .eq('id', videoszene.id);
+  
+    if (!error) {
+      revalidatePath(`/videoszene/${videoszene.id}`); // optional: Cache refresh
+    }
+  };
+
 
   const { data: videoszene, error } = await supabase
     .from('videoszenen')
@@ -40,11 +54,17 @@ export default async function Page({ params }: { params: ParamsType }) {
         <CardContent className="space-y-4">
           <Separator />
 
-          <SignedVideoPlayer
-                hash={videoszene.file.hash}
-                ext={videoszene.file.ext}
-            />
-
+          {videoszene.file
+  ? (
+    <SignedVideoPlayer
+      hash={videoszene.file.hash}
+      ext={videoszene.file.ext}
+      folder={videoszene.file.folder_path?.replace(/^\//, '') || ''}
+    />
+  ) : (
+    <VideoUpload onUploaded={handleVideoUploaded} />
+  )
+}
 
           <div>
             <p className="text-sm text-muted-foreground">Beschreibung</p>
