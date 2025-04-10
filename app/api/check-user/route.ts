@@ -1,9 +1,13 @@
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function POST(req: Request) {
   try {
-    const supabase = await createClient();
     const { input } = await req.json();
 
     if (!input) {
@@ -12,7 +16,7 @@ export async function POST(req: Request) {
 
     console.log("✅ Eingabe:", input);
 
-    // 1. Check: Ist der User schon in profiles vorhanden?
+    // 1. Check in profiles
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("email")
@@ -23,28 +27,28 @@ export async function POST(req: Request) {
       console.error("❌ Fehler beim Profile-Check:", profileError);
     }
 
-    if (profile) {
-      console.log("✅ Profile gefunden, sende Magic Link...");
+    if (profile?.email) {
+      console.log("📩 Sende Magic Link für bestehenden Nutzer");
 
-      const { error: loginError } = await supabase.auth.signInWithOtp({
+      const { error: linkError } = await supabase.auth.signInWithOtp({
         email: profile.email,
         options: {
           emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/set-password`,
         },
       });
 
-      if (loginError) {
-        console.error("❌ Fehler beim Senden des Magic Links:", loginError);
+      if (linkError) {
+        console.error("❌ Fehler beim Senden des Magic Links:", linkError);
         return NextResponse.json(
           { error: "Fehler beim Senden des Anmeldelinks." },
           { status: 500 }
         );
       }
 
-      return NextResponse.json({ message: "Anmeldelink gesendet." });
+      return NextResponse.json({ status: "exists", email: profile.email });
     }
 
-    // 2. Fallback: Suche in up_users
+    // 2. Check in up_users
     const { data: legacyUser, error: legacyError } = await supabase
       .from("up_users")
       .select("*")
@@ -56,25 +60,22 @@ export async function POST(req: Request) {
     }
 
     if (!legacyUser) {
-      console.warn("⚠️ Kein Treffer in up_users.");
-      return NextResponse.json({ error: "Benutzer nicht gefunden." }, { status: 404 });
+      return NextResponse.json({ status: "not_found" }, { status: 404 });
     }
 
-    console.log("✅ Benutzer in up_users gefunden:", legacyUser.email);
+    console.log("🔁 Starte Migration für:", legacyUser.email);
 
-    // 3. Supabase Auth-User anlegen
-    const { data: createdUser, error: signUpError } = await supabase.auth.signUp({
+    // 3. Admin: Verifizierten Auth-User anlegen
+    const { data: createdUser, error: createError } = await supabase.auth.admin.createUser({
       email: legacyUser.email,
-      password: "tempPassword123!", // Temporäres Passwort
-      options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/set-password`, // Redirect zum Setzen des Passworts
-      },
+      password: "tempPassword123!",
+      email_confirm: true,
     });
 
-    if (signUpError || !createdUser.user?.id) {
-      console.error("❌ Fehler beim Erstellen des Supabase Users:", signUpError);
+    if (createError || !createdUser?.user?.id) {
+      console.error("❌ Fehler beim Erstellen des Auth-Users:", createError);
       return NextResponse.json(
-        { error: "Fehler beim Erstellen des Kontos." },
+        { error: "Fehler beim Erstellen des Auth-Users." },
         { status: 500 }
       );
     }
@@ -88,24 +89,41 @@ export async function POST(req: Request) {
       nlz: legacyUser.nlz,
       save_view: legacyUser.save_view,
       notifications: legacyUser.notifications,
+      email: legacyUser.email,
+      rollen: legacyUser.rollen,         // TEXT[]
+      ligatyp: legacyUser.ligatyp,       // INTEGER
+      bezirk: legacyUser.bezirk          // INTEGER
     });
 
     if (profileInsertError) {
       console.error("❌ Fehler beim Anlegen des Profils:", profileInsertError);
+      return NextResponse.json({ error: "Fehler beim Erstellen des Profils." }, { status: 500 });
+    }
+
+    // 5. up_users Eintrag löschen
+    await supabase.from("up_users").delete().eq("email", legacyUser.email);
+
+    // 6. Jetzt: Magic Link schicken über signInWithOtp
+    const { error: magicError } = await supabase.auth.signInWithOtp({
+      email: legacyUser.email,
+      options: {
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/set-password`,
+      },
+    });
+
+    if (magicError) {
+      console.error("❌ Fehler beim Senden des Magic Links:", magicError);
       return NextResponse.json(
-        { error: "Fehler beim Erstellen des Profils." },
+        { error: "Profil erstellt, aber Anmeldelink konnte nicht gesendet werden." },
         { status: 500 }
       );
     }
 
-    // 5. up_users aufräumen
-    await supabase.from("up_users").delete().eq("email", legacyUser.email);
+    console.log("✅ Migration abgeschlossen & Magic Link gesendet");
 
-    console.log("✅ Migration abgeschlossen, Anmeldelink gesendet.");
-
-    return NextResponse.json({ message: "Anmeldelink gesendet und Benutzer migriert." });
+    return NextResponse.json({ status: "legacy", email: legacyUser.email });
   } catch (e) {
-    console.error("❌ Unerwarteter Fehler in /api/check-user:", e);
-    return NextResponse.json({ error: "Unerwarteter Serverfehler." }, { status: 500 });
+    console.error("💥 Unerwarteter Fehler:", e);
+    return NextResponse.json({ error: "Serverfehler" }, { status: 500 });
   }
 }

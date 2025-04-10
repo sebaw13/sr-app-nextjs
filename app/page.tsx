@@ -10,7 +10,7 @@ export default async function Home() {
 
   // Wenn kein User eingeloggt ist → zur Sign-in Page
   if (!session) {
-    redirect('/sign-in');
+    redirect('/login');
   }
 
   return (

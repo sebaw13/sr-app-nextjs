@@ -29,6 +29,6 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "app/api/signed-url"
-  ],
+, "app/api/check-user"  ],
   "exclude": ["node_modules"]
 }

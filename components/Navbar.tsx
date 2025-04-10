@@ -24,17 +24,16 @@ export default function Navbar() {
   const handleLogout = async () => {
     const supabase = createClient();
 
-    // Abmelden des Benutzers
+    // Benutzer abmelden
     const { error } = await supabase.auth.signOut();
 
-    // Fehlerbehandlung beim Logout
     if (error) {
       console.error("Fehler beim Logout:", error.message);
       return;
     }
 
-    // Benutzer erfolgreich abgemeldet, Weiterleitung zur Login-Seite
-    router.push("/sign-in");
+    // Weiterleitung zur Login-Seite
+    router.push("/login");
   };
 
   return (
@@ -46,9 +45,15 @@ export default function Navbar() {
             {/* Optional: Toggle Button */}
           </div>
 
-          {/* Logo */}
+          {/* Logo (führt Logout aus und geht zu /loginn) */}
           <div className="flex justify-center w-full lg:justify-start lg:w-auto">
-            <Link href="/" onClick={closeMenu} className="btn btn-ghost p-0">
+            <button
+              onClick={() => {
+                handleLogout();
+                closeMenu();
+              }}
+              className="btn btn-ghost p-0"
+            >
               <Image
                 src="/logo.png"
                 alt="Logo"
@@ -57,7 +62,7 @@ export default function Navbar() {
                 className="h-8 w-auto object-contain"
                 priority
               />
-            </Link>
+            </button>
           </div>
 
           {/* Desktop Navigation */}

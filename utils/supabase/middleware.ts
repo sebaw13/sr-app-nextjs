@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const updateSession = async (request: NextRequest) => {
   try {
-    let response = NextResponse.next({
+    const path = request.nextUrl.pathname;
+    const force = request.nextUrl.searchParams.get("force");
+    const response = NextResponse.next({
       request: {
         headers: request.headers,
       },
@@ -19,31 +21,69 @@ export const updateSession = async (request: NextRequest) => {
           },
           setAll(cookiesToSet) {
             cookiesToSet.forEach(({ name, value }) =>
-              request.cookies.set(name, value),
+              request.cookies.set(name, value)
             );
           },
         },
       }
     );
 
-    const { data: user } = await supabase.auth.getUser();
-    const path = request.nextUrl.pathname;
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-    // Wenn der Benutzer eingeloggt ist, aber auf `/sign-in` zugreifen möchte, leite ihn zum Dashboard weiter.
-    if (user && path === "/sign-in") {
-      return NextResponse.redirect(new URL("/", request.url)); // Weiterleitung zum Dashboard
+    console.log("🛡️ Middleware check → path:", path);
+    console.log("👤 Supabase user:", user);
+    if (error) console.error("❌ Supabase auth error:", error.message);
+
+    // Bypass über ?force=1
+    if (force === "1") {
+      console.log("🚪 Zugang erzwungen durch URL-Parameter");
+      return response;
     }
 
-    // Geschützte Routen definieren (z. B. Dashboard, Profile, etc.)
-    const isProtected = !path.startsWith("/sign-in") && !path.startsWith("/sign-up") && !path.startsWith("/forgot-password");
+    const isAuthPage =
+      path.startsWith("/login") ||
+      path.startsWith("/sign-up") ||
+      path.startsWith("/forgot-password") ||
+      path.startsWith("/set-password");
 
-    if (isProtected && !user) {
-      return NextResponse.redirect(new URL("/sign-in", request.url)); // Weiterleitung, falls nicht eingeloggt
+    // Eingeloggt → aber auf sign-in? → zurück zur Startseite
+    if (user && path === "/login") {
+      console.log("✅ Eingeloggt, redirect zu /");
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    // Nicht eingeloggt → versuchst geschützte Seite zu laden?
+    if (!user && !isAuthPage) {
+      console.log("⛔ Nicht eingeloggt, redirect zu /login");
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    // Wenn User eingeloggt ist, prüfe, ob er das Passwort gesetzt hat
+    if (user) {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("password_set")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Fehler beim Profil-Check:", profileError);
+        return response;
+      }
+
+      // Wenn Passwort noch nicht gesetzt wurde, leite auf /set-password weiter
+      if (profile && profile.password_set === false && path !== "/set-password") {
+        console.log("🔐 Passwort noch nicht gesetzt → redirect");
+        return NextResponse.redirect(new URL("/set-password", request.url));
+      }
     }
 
     return response;
   } catch (e) {
-    console.error("Error in middleware", e);
+    console.error("💥 Middleware-Fehler:", e);
     return NextResponse.next();
   }
 };

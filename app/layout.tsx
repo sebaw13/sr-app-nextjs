@@ -14,6 +14,7 @@ import clsx from "clsx";
 import Navbar from "@/components/Navbar";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import SessionRestorer from "@/components/SessionRestorer";
 
 const geistSans = Geist({
   display: "swap",
@@ -38,6 +39,7 @@ export default function RootLayout({
   return (
     <html lang="de" className={geistSans.className} suppressHydrationWarning>
       <body className="bg-background text-foreground">
+      <SessionRestorer />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
