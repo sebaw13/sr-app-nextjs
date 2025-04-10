@@ -20,7 +20,7 @@ export default function DashboardPage() {
       const { data: { user } } = await supabase.auth.getUser();  // Hier den Supabase-Client verwenden
       if (!user) {
         // Falls kein User angemeldet ist, Weiterleitung zur Anmeldeseite
-        router.push('/login');
+        router.push('/sign-in');
       } else {
         setUser(user);
       }

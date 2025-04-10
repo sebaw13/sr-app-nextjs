@@ -1,59 +1,105 @@
-import { signInAction } from "@/app/actions";
-import { FormMessage, Message } from "@/components/form-message";
-import { SubmitButton } from "@/components/submit-button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Link from "next/link";
-import Image from "next/image";
+"use client";
 
-export default async function Login(props: { searchParams: Promise<Message> }) {
-  const searchParams = await props.searchParams;
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { createClient } from "@/utils/supabase/client";
+
+export default function LoginPage() {
+  const [step, setStep] = useState<"initial" | "password">("initial");
+  const [emailOrUsername, setEmailOrUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [emailToUse, setEmailToUse] = useState("");
+  const [error, setError] = useState("");
+  const router = useRouter();
+  const supabase = createClient();
+
+  // Überprüfe, ob der Benutzer bereits eingeloggt ist
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log("✅ Session:", session); // Logging der Session
+
+      if (session) {
+        // Wenn bereits eingeloggt, leite ihn zum Dashboard weiter
+        router.push("/dashboard");
+      }
+    };
+    checkSession();
+  }, [supabase, router]);
+
+  const checkUser = async () => {
+    setError("");
+    console.log("Sende an API:", emailOrUsername);
+
+    const res = await fetch("/api/check-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ input: emailOrUsername }),
+    });
+
+    const result = await res.json();
+    console.log("API-Antwort:", result);
+
+    if (result.exists) {
+      setEmailToUse(result.email);
+      setStep("password");
+    } else if (result.legacy) {
+      await supabase.auth.signUp({
+        email: result.email,
+        options: {
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/set-password`,
+        },
+        password: "tempPassword123!" // Temporäres Passwort, damit der Magic Link funktioniert
+      });
+      setError("Anmeldelink wurde gesendet. Bitte E-Mail prüfen.");
+    } else {
+      setError("Benutzer nicht gefunden.");
+    }
+  };
+
+  const login = async () => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: emailToUse,
+      password,
+    });
+
+    if (error) {
+      setError("Falsches Passwort.");
+    } else {
+      router.push("/dashboard");
+    }
+  };
 
   return (
-    <div className="flex min-h-screen justify-center items-center bg-background">
-      {/* Hauptcontainer für Formular und Bild */}
-      <div className="w-full max-w-screen-xl flex justify-between items-center px-5">
+    <div className="max-w-md mx-auto mt-20 space-y-6">
+      <h1 className="text-2xl font-semibold text-center">Anmelden</h1>
 
-        {/* Linkes Formular */}
-        <form className="w-full md:w-1/2 max-w-md flex flex-col gap-6 px-6 py-8 border border-border rounded-lg shadow-md bg-white h-[50vh]">
-          <h1 className="text-2xl font-medium text-center">Anmelden</h1>
-          <div className="flex flex-col gap-2 [&>input]:mb-3 mt-8">
-            <Label htmlFor="email">E-Mail</Label>
-            <Input name="email" placeholder="schiedsrichter@bfv.de" required />
-            <div className="flex justify-between items-center">
-              <Label htmlFor="password">Passwort</Label>
-              <Link
-                className="text-xs text-foreground underline"
-                href="/forgot-password"
-              >
-                Passwort vergessen?
-              </Link>
-            </div>
-            <Input
-              type="password"
-              name="password"
-              placeholder="Dein Passwort"
-              required
-            />
-            <SubmitButton pendingText="Wird angemeldet..." formAction={signInAction}>
-              Anmelden
-            </SubmitButton>
-            <FormMessage message={searchParams} />
-          </div>
-        </form>
-
-        {/* Rechter Bereich mit Bild */}
-        <div className="w-full md:w-1/2 h-[50vh] flex justify-center items-center mb-8 md:mb-0">
-          <Image
-            src="/bfv-kampage.jpg"  // Dein Bild-Link hier
-            alt="Login Illustration"
-            width={800}
-            height={450}
-            className="rounded-lg shadow-md object-cover"
+      {step === "initial" && (
+        <>
+          <Input
+            placeholder="E-Mail oder Benutzername"
+            value={emailOrUsername}
+            onChange={(e) => setEmailOrUsername(e.target.value)}
           />
-        </div>
+          <Button onClick={checkUser}>Weiter</Button>
+        </>
+      )}
 
-      </div>
+      {step === "password" && (
+        <>
+          <Input
+            type="password"
+            placeholder="Passwort"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <Button onClick={login}>Login</Button>
+        </>
+      )}
+
+      {error && <p className="text-red-500 text-sm">{error}</p>}
     </div>
   );
 }

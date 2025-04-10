@@ -20,7 +20,7 @@ export default function UsersPage() {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        router.push('/login');
+        router.push('/sign-in');
       } else {
         setUser(user);
       }

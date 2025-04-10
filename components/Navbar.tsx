@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import clsx from "clsx";
+import { createClient } from "@/utils/supabase/client";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -16,16 +17,33 @@ const navLinks = [
 export default function Navbar() {
   const [isMenuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
   const closeMenu = () => setMenuOpen(false);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+
+    // Abmelden des Benutzers
+    const { error } = await supabase.auth.signOut();
+
+    // Fehlerbehandlung beim Logout
+    if (error) {
+      console.error("Fehler beim Logout:", error.message);
+      return;
+    }
+
+    // Benutzer erfolgreich abgemeldet, Weiterleitung zur Login-Seite
+    router.push("/sign-in");
+  };
 
   return (
     <>
       <div className="flex justify-center mt-6 z-50">
-      <div className="bg-primary text-primary-foreground shadow-md px-6 py-4 w-full max-w-screen-xl mx-auto flex justify-between items-center">
-
-          {/* Mobile: Hamburger Button */}
+        <div className="bg-primary text-primary-foreground shadow-md px-6 py-4 w-full max-w-screen-xl mx-auto flex justify-between items-center">
+          {/* Mobile: Hamburger Button (optional) */}
           <div className="lg:hidden">
+            {/* Optional: Toggle Button */}
           </div>
 
           {/* Logo */}
@@ -43,7 +61,7 @@ export default function Navbar() {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex gap-6">
+          <div className="hidden lg:flex gap-6 items-center">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -56,6 +74,12 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+            <button
+              onClick={handleLogout}
+              className="ml-4 underline hover:no-underline font-medium"
+            >
+              Logout
+            </button>
           </div>
         </div>
       </div>
@@ -84,6 +108,17 @@ export default function Navbar() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    closeMenu();
+                  }}
+                  className="block w-full text-lg font-medium hover:underline"
+                >
+                  Logout
+                </button>
+              </li>
             </ul>
           </div>
         </div>
