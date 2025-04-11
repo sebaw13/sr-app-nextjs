@@ -15,6 +15,8 @@ import Navbar from "@/components/Navbar";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import SessionRestorer from "@/components/SessionRestorer";
+import SupabaseProvider from "@/components/supabase-provider";
+
 
 const geistSans = Geist({
   display: "swap",
@@ -46,6 +48,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <SupabaseProvider>
           <main className="min-h-screen flex flex-col">
             {showNavbar && <Navbar />}
 
@@ -70,6 +73,7 @@ export default function RootLayout({
               </footer>
             )}
           </main>
+          </SupabaseProvider>
         </ThemeProvider>
       </body>
     </html>
