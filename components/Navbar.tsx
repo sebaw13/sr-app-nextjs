@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import clsx from "clsx";
 import { createClient } from "@/utils/supabase/client";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import type { User } from "@supabase/supabase-js";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -15,119 +18,107 @@ const navLinks = [
 ];
 
 export default function Navbar() {
-  const [isMenuOpen, setMenuOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const pathname = usePathname();
   const router = useRouter();
+  const supabase = createClient();
 
-  const closeMenu = () => setMenuOpen(false);
+  useEffect(() => {
+    setIsMounted(true);
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+    });
+  }, []);
 
   const handleLogout = async () => {
-    const supabase = createClient();
-
-    // Benutzer abmelden
     const { error } = await supabase.auth.signOut();
-
     if (error) {
       console.error("Fehler beim Logout:", error.message);
       return;
     }
-
-    // Weiterleitung zur Login-Seite
     router.push("/login");
   };
 
+  if (!isMounted || !user) return null;
+
   return (
-    <>
-      <div className="flex justify-center mt-6 z-50">
-        <div className="bg-primary text-primary-foreground shadow-md px-6 py-4 w-full max-w-screen-xl mx-auto flex justify-between items-center">
-          {/* Mobile: Hamburger Button (optional) */}
-          <div className="lg:hidden">
-            {/* Optional: Toggle Button */}
-          </div>
+    <div className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-md">
+      <div className="px-4 py-3 w-full max-w-screen-xl mx-auto flex justify-between items-center">
+        {/* Logo */}
+        <Link href="/">
+          <Image
+            src="/logo.png"
+            alt="Logo"
+            width={100}
+            height={40}
+            className="h-8 w-auto object-contain"
+            priority
+          />
+        </Link>
 
-          {/* Logo (führt Logout aus und geht zu /loginn) */}
-          <div className="flex justify-center w-full lg:justify-start lg:w-auto">
-            <button
-              onClick={() => {
-                handleLogout();
-                closeMenu();
-              }}
-              className="btn btn-ghost p-0"
+        {/* Desktop Navigation */}
+        <div className="hidden lg:flex gap-6 items-center">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={clsx(
+                "text-white",
+                pathname === link.href && "font-semibold"
+              )}
             >
-              <Image
-                src="/logo.png"
-                alt="Logo"
-                width={100}
-                height={40}
-                className="h-8 w-auto object-contain"
-                priority
-              />
-            </button>
-          </div>
-
-          {/* Desktop Navigation */}
-          <div className="hidden lg:flex gap-6 items-center">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={clsx(
-                  "hover:underline font-medium",
-                  pathname === link.href && "underline underline-offset-4"
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
-            <button
-              onClick={handleLogout}
-              className="ml-4 underline hover:no-underline font-medium"
-            >
-              Logout
-            </button>
-          </div>
+              {link.label}
+            </Link>
+          ))}
+          <Button onClick={handleLogout} variant="ghost">
+            Logout
+          </Button>
         </div>
-      </div>
 
-      {/* Mobile Overlay Menu */}
-      {isMenuOpen && (
-        <div
-          id="menu-overlay"
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 flex justify-center items-start"
-          onClick={(e) => {
-            if ((e.target as HTMLElement).id === "menu-overlay") {
-              setMenuOpen(false);
-            }
-          }}
-        >
-          <div className="bg-primary text-primary-foreground w-11/12 max-w-sm mt-20 rounded-lg shadow-lg z-50 p-4">
-            <ul className="flex flex-col gap-4 text-center">
-              {navLinks.map((link) => (
-                <li key={link.href}>
+        {/* Mobile Navigation */}
+        <div className="lg:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-6 h-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3.75 6.75h16.5m-16.5 5.25h16.5m-16.5 5.25h16.5"
+                  />
+                </svg>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left">
+              <div className="flex flex-col gap-4 mt-8">
+                {navLinks.map((link) => (
                   <Link
+                    key={link.href}
                     href={link.href}
-                    className="block text-lg font-medium hover:underline"
-                    onClick={closeMenu}
+                    className={clsx(
+                      "text-lg text-white",
+                      pathname === link.href && "font-semibold"
+                    )}
                   >
                     {link.label}
                   </Link>
-                </li>
-              ))}
-              <li>
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    closeMenu();
-                  }}
-                  className="block w-full text-lg font-medium hover:underline"
-                >
+                ))}
+                <Button onClick={handleLogout} variant="ghost">
                   Logout
-                </button>
-              </li>
-            </ul>
-          </div>
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 }

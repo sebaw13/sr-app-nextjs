@@ -33,8 +33,6 @@ export const updateSession = async (request: NextRequest) => {
       error,
     } = await supabase.auth.getUser();
 
-    console.log("🛡️ Middleware check → path:", path);
-    console.log("👤 Supabase user:", user);
     if (error) console.error("❌ Supabase auth error:", error.message);
 
     // Bypass über ?force=1
