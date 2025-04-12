@@ -5,9 +5,8 @@ import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
 export async function GET() {
   console.log("🟡 Eingehende Anfrage: /api/userdaten");
 
-  const cookieStore = cookies(); // kein await!
-console.log("🍪 Cookies:", (await cookieStore).getAll()); // ✅ funktioniert
-
+  const cookieStore = cookies(); // ✅ FIX
+  console.log("🍪 Cookies:", (await cookieStore).getAll());
 
   const supabase = createServerActionClient({ cookies: () => cookieStore });
 
