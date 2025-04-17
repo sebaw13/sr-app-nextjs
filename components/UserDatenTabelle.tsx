@@ -61,7 +61,8 @@ export default function UserDatenTabelle() {
     if (!raw) return [];
     if (Array.isArray(raw)) return raw;
     if (typeof raw === "string" && raw.startsWith("[")) return JSON.parse(raw);
-    return [raw];
+    if (typeof raw === "string") return raw.split(",");
+    return [String(raw)];
   };
 
   const transformUser = (user: any): UserData => {
@@ -72,17 +73,23 @@ export default function UserDatenTabelle() {
       vorname: user.vorname || "",
       email: user.email || "",
       rollen,
-      bezirk: user.bezirk?.name || "",
-      spielklasse: user.ligatyp?.name || "",
+      bezirk: user.bezirk?.name || user.bezirk || "",
+      spielklasse: user.ligatyp?.name || user.ligatyp || "",
       nlz: !!user.nlz,
     };
   };
 
   useEffect(() => {
     fetch("/api/userdaten")
-      .then((res) => res.ok ? res.json() : Promise.reject("Nicht autorisiert"))
-      .then((data) => setUsers(data.map(transformUser)))
-      .catch(() => setUsers([]));
+      .then((res) => (res.ok ? res.json() : Promise.reject("Nicht autorisiert")))
+      .then((data) => {
+        console.log("👥 Benutzer geladen:", data.users?.length);
+        setUsers((data.users || []).map(transformUser));
+      })
+      .catch((err) => {
+        console.error("❌ Fehler beim Laden:", err);
+        setUsers([]);
+      });
   }, []);
 
   useEffect(() => {

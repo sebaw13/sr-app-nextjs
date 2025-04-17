@@ -1,84 +1,109 @@
-import { NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
+import { NextResponse } from "next/server";
 
 export async function GET() {
-  console.log("🟡 Eingehende Anfrage: /api/userdaten");
+  const cookieStore = cookies();
 
-  const cookieStore = cookies(); // ✅ FIX
-  console.log("🍪 Cookies:", (await cookieStore).getAll());
-
-  const supabase = createServerActionClient({ cookies: () => cookieStore });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        async getAll() {
+          return (await cookieStore).getAll();
+        },
+        setAll(cookies) {
+          cookies.forEach(async ({ name, value, options }) => {
+            (await cookieStore).set({ name, value, ...options });
+          });
+        },
+      },
+    }
+  );
 
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
 
-  console.log("👤 Aktueller Benutzer:", user);
-
-  if (!user) {
-    console.warn("🔴 Kein eingeloggter Benutzer gefunden");
+  if (!user || error) {
+    console.log("❌ Nicht eingeloggt");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data, error } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("rollen, bezirk(name)")
+    .select("*")
     .eq("id", user.id)
-    .single<{ rollen: string[] | string; bezirk?: { name?: string } }>();
+    .maybeSingle();
 
-  if (error || !data) {
-    console.error("🔴 Fehler beim Abrufen der Rollen:", error);
-    return NextResponse.json([], { status: 403 });
+  if (profileError || !profile) {
+    console.log("❌ Kein Profil gefunden");
+    return NextResponse.json({ error: "Profil nicht gefunden" }, { status: 404 });
   }
 
-  const rollen = Array.isArray(data.rollen)
-    ? data.rollen
-    : JSON.parse(data.rollen || "[]");
+  console.log("👤 Aktives Profil:", profile);
 
-  const isVSA = rollen.includes("VSA");
-  const isBSA = rollen.includes("BSA");
-  const bezirk = data.bezirk?.name;
+  let rollen: string[] = [];
 
-  console.log("🛡 Rollen:", rollen);
-  console.log("✅ isVSA:", isVSA, "| ✅ isBSA:", isBSA);
-  console.log("📍 Bezirk:", bezirk);
-
-  if (!isVSA && !isBSA) {
-    return NextResponse.json([], { status: 403 });
+  if (Array.isArray(profile.rollen)) {
+    rollen = profile.rollen;
+  } else if (typeof profile.rollen === "string") {
+    try {
+      rollen = JSON.parse(profile.rollen);
+    } catch {
+      rollen = [profile.rollen];
+    }
   }
 
-  let query = supabase
+  const bezirk = profile.bezirk;
+  console.log("🔎 Rollen:", rollen);
+  console.log("🔎 Bezirk:", bezirk);
+
+  if (!rollen || rollen.length === 0) {
+    console.log("❌ Keine Rollen gefunden");
+    return NextResponse.json({ error: "Keine Rollen gefunden" }, { status: 403 });
+  }
+
+  // Lade auch bezirk.name und ligatyp.name aus Referenzen
+  let profilesQuery = supabase
     .from("profiles")
-    .select("id, name, vorname, email, rollen, bezirk(name), ligatyp(name), nlz");
+    .select("*, bezirk(name), ligatyp(name)");
 
-  if (isVSA) {
-    const { data: all, error: allError } = await query;
-    if (allError || !all) {
-      console.error("🔴 Fehler beim Abrufen aller Profile:", allError);
-      return NextResponse.json([], { status: 500 });
-    }
+  let legacyQuery = supabase
+    .from("up_users")
+    .select("*, bezirk(name), ligatyp(name)");
 
-    const erlaubteLigatypen = ["1", "2", "3", "6", "7", "8"];
-    const filtered = all.filter((u: any) =>
-      erlaubteLigatypen.includes(u.ligatyp?.name)
+  if (rollen.includes("BSA")) {
+    console.log("🔍 Filter für BSA (bezirk = " + bezirk + ")");
+    profilesQuery = profilesQuery.eq("bezirk", bezirk);
+    legacyQuery = legacyQuery.eq("bezirk", bezirk);
+  } else if (rollen.includes("VSA")) {
+    console.log("🔍 Filter für VSA (ligatyp IN 1,2,3,7,8)");
+    profilesQuery = profilesQuery.in("ligatyp", [1, 2, 3, 7, 8]);
+    legacyQuery = legacyQuery.in("ligatyp", [1, 2, 3, 7, 8]);
+  } else {
+    console.log("❌ Keine Berechtigung laut Rolle:", rollen);
+    return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 });
+  }
+
+  const [{ data: usersProfiles, error: error1 }, { data: usersLegacy, error: error2 }] = await Promise.all([
+    profilesQuery,
+    legacyQuery,
+  ]);
+
+  if (error1 || error2) {
+    console.log("❌ Fehler bei Query:", error1?.message || error2?.message);
+    return NextResponse.json(
+      { error: error1?.message || error2?.message },
+      { status: 500 }
     );
-
-    console.log(`📦 Gefilterte ${filtered.length} Datensätze für VSA`);
-    return NextResponse.json(filtered);
   }
 
-  if (isBSA && bezirk) {
-    query = query.eq("bezirk.name", bezirk);
-    const { data: result, error: err } = await query;
-    if (err || !result) {
-      console.error("🔴 Fehler beim Abrufen der BSA-Daten:", err);
-      return NextResponse.json([], { status: 500 });
-    }
+  const users = [...(usersProfiles || []), ...(usersLegacy || [])];
 
-    console.log(`📦 ${result.length} Datensätze für BSA ${bezirk}`);
-    return NextResponse.json(result);
-  }
+  console.log("✅ Gefundene Nutzer:", users.length);
 
-  return NextResponse.json([], { status: 403 });
+  return NextResponse.json({ users });
 }

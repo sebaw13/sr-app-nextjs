@@ -16,15 +16,18 @@ export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  // Session check (falls bereits eingeloggt)
+  // Falls schon eingeloggt → weiterleiten
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) router.push("/");
+      if (session) {
+        router.replace("/"); // keine Animation, keine Middleware-Umleitung
+      }
     };
     checkSession();
-  }, [supabase, router]);
+  }, []);
 
+  // Benutzer prüfen
   const checkUser = async () => {
     setError("");
     setMessage("");
@@ -54,17 +57,24 @@ export default function LoginPage() {
     }
   };
 
+  // Login via Passwort
   const login = async () => {
     setError("");
-    const { error } = await supabase.auth.signInWithPassword({
+    setMessage("Einloggen...");
+
+    const { data, error: loginError } = await supabase.auth.signInWithPassword({
       email: emailToUse,
       password,
     });
 
-    if (error) {
+    if (loginError) {
+      console.error("❌ Login-Fehler:", loginError.message);
       setError("Falsches Passwort oder ungültige Anmeldung.");
+      setMessage("");
     } else {
-      router.push("/");
+      console.log("✅ Eingeloggt:", data.session?.user.email);
+      // HARDCODED Redirect, damit Cookies für Middleware aktiv sind
+      window.location.href = "/";
     }
   };
 
@@ -97,6 +107,10 @@ export default function LoginPage() {
 
       {step === "magic-link" && message && (
         <p className="text-green-600 text-sm text-center">{message}</p>
+      )}
+
+      {message && step !== "magic-link" && (
+        <p className="text-gray-600 text-sm text-center">{message}</p>
       )}
 
       {error && <p className="text-red-500 text-sm text-center">{error}</p>}
