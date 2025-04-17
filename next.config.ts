@@ -1,8 +1,14 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ["bfv-vsa.fra1.digitaloceanspaces.com"], // ✅ Hier deine erlaubte Domain eintragen
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.digitaloceanspaces.com',
+        pathname: '**',
+      },
+    ],
   },
 };
 
