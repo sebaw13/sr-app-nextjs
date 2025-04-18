@@ -20,7 +20,6 @@ interface SzeneKarteProps {
 
 export default function SzeneKarte({ szene }: SzeneKarteProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const supabase = createClientComponentClient<Database>(); // Typ optional
 
   const begrenzteBeschreibung =
     szene.beschreibung?.slice(0, 50) +
