@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+
+
+const supabase = createClientComponentClient(); // oder <any> bei Bedarf
+
 
 interface SzeneKarteProps {
   szene: {
@@ -15,38 +20,44 @@ interface SzeneKarteProps {
 
 export default function SzeneKarte({ szene }: SzeneKarteProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const supabase = createClientComponentClient<Database>(); // Typ optional
 
   const begrenzteBeschreibung =
     szene.beschreibung?.slice(0, 50) +
     (szene.beschreibung?.length > 50 ? '...' : '');
 
-    useEffect(() => {
+  useEffect(() => {
+    const fetchImage = async () => {
       const key = szene.thumbnail_path;
-      if (key && typeof key === 'string') {
-        const proxyUrl = `/api/signed-url`;  // Keine Query-Parameter mehr!
-        
-        // Anpassen der Fetch-Anfrage auf `POST`
-        const fetchSignedUrl = async () => {
-          try {
-            const res = await fetch(proxyUrl, {
-              method: 'POST',  // POST statt GET
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ key }),  // Den Key im Body übergeben
-            });
-    
-            const json = await res.json();
-            if (json.url) {
-              setImageUrl(json.url);  // Setze die URL für das Bild
-            }
-          } catch (err) {
-            console.error('❌ Fehler beim Abrufen der Signed URL:', err);
-          }
-        };
-    
-        fetchSignedUrl();
+      if (!key) return;
+
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+
+      const proxyUrl = `https://cqzoinogymcxvnsldwlz.supabase.co/functions/v1/thumbnail?key=${encodeURIComponent(
+        key
+      )}`;
+
+      try {
+        const res = await fetch(proxyUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setImageUrl(data.url);
+        } else {
+          console.error('❌ Fehler beim Abrufen des Bildes:', res.statusText);
+        }
+      } catch (err) {
+        console.error('❌ Fehler beim Abrufen der Bild-URL:', err);
       }
-    }, [szene.thumbnail_path]);  // Achte darauf, dass thumbnail_path korrekt gesetzt ist
-    
+    };
+
+    fetchImage();
+  }, [szene.thumbnail_path, supabase]);
 
   const parsedThemen = Array.isArray(szene.themen)
     ? szene.themen
@@ -65,17 +76,13 @@ export default function SzeneKarte({ szene }: SzeneKarteProps) {
       className="block w-full sm:w-1/2 md:w-1/4 p-2"
     >
       <div className="flex flex-col h-full bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-        {imageUrl ? (
+        {imageUrl && (
           <div className="h-48 w-full">
             <img
               src={imageUrl}
               alt={szene.titel}
               className="w-full h-full object-cover"
             />
-          </div>
-        ) : (
-          <div className="h-48 w-full bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
-            Kein Bild verfügbar
           </div>
         )}
 
