@@ -8,12 +8,10 @@ import {
   BarChart2,
   FolderKanban,
   Settings,
-  Mail,
-  ShieldCheck,
+  ArrowLeft,
   Users,
   Layers,
   SquareTerminal,
-  ArrowLeft,
 } from "lucide-react";
 
 import {
@@ -26,24 +24,21 @@ import {
 
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
-import { TeamSwitcher } from "./team-switcher";
 
-import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 
-// 🔐 Beispielhafte Rollenlogik
-const user = {
-  name: "Admin User",
-  email: "admin@example.com",
-  avatar: "/avatars/shadcn.jpg",
-  sr_rolle: [{ rolle: "KT" }, { rolle: "VSA" }],
+import { createClient } from "@/utils/supabase/client";
+type Role = {
+  rolle: string;
 };
 
-const hasRole = (roles: string[]) =>
-  user?.sr_rolle?.some((r) => roles.includes(r.rolle));
+type UserProfile = {
+  name: string;
+  email: string;
+  rollen: string[]; // 👈 direkt als Array von Strings
+};
 
-// Navigation: dynamisch, rollenbasiert
 const navMain = [
   {
     title: "Meine Daten",
@@ -100,32 +95,79 @@ const navMain = [
   },
 ];
 
-const projects = [
-  {
-    name: "Spielberichte",
-    url: "#",
-    icon: SquareTerminal,
-  },
-];
-
 export function DashboardSidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const filteredNav = navMain
-    .filter((item) => !item.roles || hasRole(item.roles))
-    .map((item) => {
-      const subIsActive = item.items?.some((sub) => pathname.startsWith(sub.url)) ?? false;
-      const isActive = pathname.startsWith(item.url) || subIsActive;
-      return {
-        ...item,
-        isActive,
-        items: item.items?.map((sub) => ({
-          ...sub,
-          isActive: pathname === sub.url,
-        })),
-      };
-    });
+  const [user, setUser] = React.useState<UserProfile | null>(null);
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createClient();
+
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      console.log("Session:", session);
+      if (sessionError || !session?.user) {
+        console.error("Session-Fehler:", sessionError);
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("name, email, rollen")
+        .eq("id", session.user.id)
+        .single();
+
+      console.log("Profil:", profile);
+      if (profileError) {
+        console.error("Profil-Fehler:", profileError);
+      } else {
+        setUser(profile); // rollen ist bereits string[]
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  const hasRole = (roles: string[]) =>
+    user?.rollen?.some((r) => roles.includes(r));
+
+  const filteredNav = React.useMemo(() => {
+    if (!user) return [];
+    return navMain
+      .filter((item) => !item.roles || hasRole(item.roles))
+      .map((item) => {
+        const subIsActive = item.items?.some((sub) =>
+          pathname.startsWith(sub.url)
+        );
+        const isActive = pathname.startsWith(item.url) || subIsActive;
+        return {
+          ...item,
+          isActive,
+          items: item.items?.map((sub) => ({
+            ...sub,
+            isActive: pathname === sub.url,
+          })),
+        };
+      });
+  }, [pathname, user]);
+
+  if (!user) {
+    return (
+      <Sidebar
+        collapsible="icon"
+        className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-none"
+      >
+        <SidebarHeader>
+          <div className="px-4 py-2 text-sm">Lade Benutzerdaten...</div>
+        </SidebarHeader>
+      </Sidebar>
+    );
+  }
 
   return (
     <Sidebar
@@ -149,7 +191,7 @@ export function DashboardSidebar() {
         <div className="mt-4 border-t pt-4 px-3">
           <Link
             href="/"
-            className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground"
+            className="flex items-center text-sm font-medium text-[hsl(var(--primary-foreground))] hover:text-[hsl(var(--primary-foreground))]/80"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Zum Portal
@@ -158,7 +200,6 @@ export function DashboardSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="text-[hsl(var(--primary-foreground))]">
-        <NavUser user={user} />
       </SidebarFooter>
 
       <SidebarRail />

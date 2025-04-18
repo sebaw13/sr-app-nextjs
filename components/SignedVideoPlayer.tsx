@@ -1,50 +1,23 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react'
 
-type Props = {
-  hash: string;
-  ext: string;
-  folder?: string;
-};
+interface Mp4VideoPlayerProps {
+  hash: string
+  folder?: string
+  ext?: string // Standard: ".mp4"
+}
 
-export default function SignedVideoPlayer({ hash, ext, folder = '' }: Props) {
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fileKey = `${folder ? `${folder}/` : ''}${hash}${ext}`;
+export default function Mp4VideoPlayer({ hash, folder = '', ext = '.mp4' }: Mp4VideoPlayerProps) {
+  const fileKey = `${folder ? `${folder}/` : ''}${hash}${ext}`
+  const proxyUrl = `/api/video-proxy?key=${encodeURIComponent(fileKey)}`
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchSignedUrl = async () => {
-      try {
-        const res = await fetch('/api/signed-url', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ key: fileKey }),
-        });
+    // Optional: vorab HEAD prüfen oder preload logic
+  }, [proxyUrl])
 
-        const data = await res.json();
-        if (res.ok) {
-          setVideoUrl(data.url);
-        } else {
-          setError(data.error || 'Fehler beim Abrufen der Video-URL');
-        }
-      } catch (err) {
-        setError('Netzwerkfehler beim Abrufen der Video-URL');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSignedUrl();
-  }, [fileKey]);
-
-  if (loading) return <p>Lade Video...</p>;
-  if (error) return <p>Fehler: {error}</p>;
-  if (!videoUrl) return <p>Keine Video-URL verfügbar</p>;
+  if (error) return <p className="text-red-600">{error}</p>
 
   return (
     <video
@@ -52,8 +25,8 @@ export default function SignedVideoPlayer({ hash, ext, folder = '' }: Props) {
       width="100%"
       style={{ borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.2)' }}
     >
-      <source src={videoUrl} type="video/mp4" />
+      <source src={proxyUrl} type="video/mp4" />
       Dein Browser unterstützt das Video-Tag nicht.
     </video>
-  );
+  )
 }

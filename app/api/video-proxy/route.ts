@@ -1,4 +1,4 @@
-// Datei: app/api/image-proxy/route.ts
+// Datei: app/api/video-proxy/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import AWS from 'aws-sdk'
 
@@ -21,12 +21,12 @@ export async function GET(req: NextRequest) {
       .promise()
 
     const headers = new Headers()
-    headers.set('Content-Type', object.ContentType || 'application/octet-stream')
+    headers.set('Content-Type', 'video/mp4')
     headers.set('Cache-Control', 'public, max-age=3600')
 
     return new NextResponse(object.Body as any, { status: 200, headers })
   } catch (error) {
-    console.error('DO Proxy Error:', error)
-    return new NextResponse('File not found', { status: 404 })
+    console.error('DO Video Proxy Error:', error)
+    return new NextResponse('Video not found', { status: 404 })
   }
 }

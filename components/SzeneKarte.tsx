@@ -25,38 +25,29 @@ export default function SzeneKarte({ szene }: SzeneKarteProps) {
     szene.beschreibung?.slice(0, 50) +
     (szene.beschreibung?.length > 50 ? '...' : '');
 
-  useEffect(() => {
-    const fetchImage = async () => {
-      const key = szene.thumbnail_path;
-      if (!key) return;
-
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-
-      const proxyUrl = `https://cqzoinogymcxvnsldwlz.supabase.co/functions/v1/thumbnail?key=${encodeURIComponent(
-        key
-      )}`;
-
-      try {
-        const res = await fetch(proxyUrl, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          setImageUrl(data.url);
-        } else {
-          console.error('❌ Fehler beim Abrufen des Bildes:', res.statusText);
+    useEffect(() => {
+      const fetchImage = async () => {
+        const key = szene.thumbnail_path;
+        if (!key) return;
+    
+        const proxyUrl = `/api/image-proxy?key=${encodeURIComponent(key)}`;
+    
+        try {
+          const res = await fetch(proxyUrl);
+    
+          if (res.ok) {
+            setImageUrl(proxyUrl); // Direkt verwenden!
+          } else {
+            console.error('❌ Fehler beim Abrufen des Bildes:', res.statusText);
+          }
+        } catch (err) {
+          console.error('❌ Fehler beim Abrufen der Bild-URL:', err);
         }
-      } catch (err) {
-        console.error('❌ Fehler beim Abrufen der Bild-URL:', err);
-      }
-    };
-
-    fetchImage();
-  }, [szene.thumbnail_path, supabase]);
+      };
+    
+      fetchImage();
+    }, [szene.thumbnail_path]);
+    
 
   const parsedThemen = Array.isArray(szene.themen)
     ? szene.themen
